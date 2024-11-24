@@ -1,53 +1,16 @@
 import math
 from multiprocessing import Queue
 
+from metadrive.envs.scenario_env import ScenarioEnv
 from metadrive.component.sensors.base_camera import _cuda_enable
-from metadrive.component.map.pg_map import MapGenerateMethod
 
 from openpilot.tools.sim.bridge.common import SimulatorBridge
 from openpilot.tools.sim.bridge.metadrive.metadrive_common import RGBCameraRoad, RGBCameraWide
-from openpilot.tools.sim.bridge.metadrive.metadrive_world import MetaDriveWorld
+from openpilot.tools.sim.bridge.metadrive.scenarionet_world import ScenarioNetWorld
 from openpilot.tools.sim.lib.camerad import W, H
 
 
-def straight_block(length):
-  return {
-    "id": "S",
-    "pre_block_socket_index": 0,
-    "length": length
-  }
-
-def curve_block(length, angle=45, direction=0):
-  return {
-    "id": "C",
-    "pre_block_socket_index": 0,
-    "length": length,
-    "radius": length,
-    "angle": angle,
-    "dir": direction
-  }
-
-def create_map(track_size=60):
-  curve_len = track_size * 2
-  return dict(
-    type=MapGenerateMethod.PG_MAP_FILE,
-    lane_num=2,
-    lane_width=4.5,
-    config=[
-      None,
-      straight_block(track_size),
-      curve_block(curve_len, 90),
-      straight_block(track_size),
-      curve_block(curve_len, 90),
-      straight_block(track_size),
-      curve_block(curve_len, 90),
-      straight_block(track_size),
-      curve_block(curve_len, 90),
-    ]
-  )
-
-
-class MetaDriveBridge(SimulatorBridge):
+class ScenarioNetBridge(SimulatorBridge):
   TICKS_PER_FRAME = 5
 
   def __init__(self, dual_camera, high_quality, test_duration=math.inf, test_run=False):
@@ -64,25 +27,31 @@ class MetaDriveBridge(SimulatorBridge):
 
     if self.dual_camera:
       sensors["rgb_wide"] = (RGBCameraWide, W, H)
-
+    dataset = '/media/ml4u/Challenge-4TB/scenarionet/filtered_dataset/thresh_0_2/all/av2_train/'
     config = dict(
-      use_render=self.should_render,
+      manual_control = False,
+      # reactive_traffic = False,
+      data_directory= dataset,
+      num_scenarios=10000,
+      even_sample_vehicle_class = False,
+
+      use_render=self.should_render, # always False
       vehicle_config=dict(
         # enable_reverse=False, # local metadrive(pulled 18/11/2024) does not work with this
-        # render_vehicle=False,
         image_source="rgb_road",
       ),
       sensors=sensors,
-      image_on_cuda=False, #_cuda,_enable, FIXME : RuntimeError: cudaErrorUnknown(999): unknown error
+      # image_on_cuda=_cuda_enable,
+      # image_on_cuda=True,
       image_observation=True,
       interface_panel=[],
       out_of_route_done=False,
-      on_continuous_line_done=False,
+      # on_continuous_line_done=False,
       crash_vehicle_done=False,
       crash_object_done=False,
       arrive_dest_done=False,
-      traffic_density=0.0, # traffic is incredibly expensive
-      map_config=create_map(),
+      # traffic_density=0.1, # traffic is incredibly expensive
+      # map_config=create_map(),
       decision_repeat=1,
       physics_world_step_size=self.TICKS_PER_FRAME/100,
       preload_models=False,
@@ -90,4 +59,4 @@ class MetaDriveBridge(SimulatorBridge):
       # anisotropic_filtering=False # local metadrive(pulled 18/11/2024) does not work with this
     )
 
-    return MetaDriveWorld(queue, config, self.test_duration, self.test_run, self.dual_camera)
+    return ScenarioNetWorld(queue, config, self.test_duration, self.test_run, self.dual_camera)

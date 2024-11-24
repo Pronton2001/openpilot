@@ -40,7 +40,7 @@ dependencies = [
   # modeld
   "onnx >= 1.14.0",
   "onnxruntime >=1.16.3; platform_system == 'Linux' and platform_machine == 'aarch64'",
-  "onnxruntime-gpu >=1.16.3; platform_system == 'Linux' and platform_machine == 'x86_64'",
+  "onnxruntime-gpu >=1.16.3; platform_system == 'Linux' and platform_machine == 'x86_64'", # 1.18.1 for cuda 11
 
   # logging
   "pyzmq",
@@ -117,7 +117,6 @@ dev = [
 ]
 
 tools = [
-  "metadrive-simulator @ https://github.com/commaai/metadrive/releases/download/MetaDrive-minimal/metadrive_simulator-0.4.2.3-py3-none-any.whl ; (platform_machine != 'aarch64')",
   "rerun-sdk >= 0.18",
 ]
 

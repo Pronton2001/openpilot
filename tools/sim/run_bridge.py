@@ -3,13 +3,17 @@ import argparse
 
 from typing import Any
 from multiprocessing import Queue
+import multiprocessing
 
 from openpilot.tools.sim.bridge.metadrive.metadrive_bridge import MetaDriveBridge
+# from openpilot.tools.sim.bridge.metadrive.scenarionet_bridge import ScenarioNetBridge
+
 
 def create_bridge(dual_camera, high_quality):
   queue: Any = Queue()
 
   simulator_bridge = MetaDriveBridge(dual_camera, high_quality)
+  # simulator_bridge = ScenarioNetBridge(dual_camera, high_quality)
   simulator_process = simulator_bridge.run(queue)
 
   return queue, simulator_process, simulator_bridge
@@ -27,6 +31,8 @@ def parse_args(add_args=None):
   return parser.parse_args(add_args)
 
 if __name__ == "__main__":
+  # multiprocessing.set_start_method('spawn')
+  multiprocessing.set_start_method('forkserver', force=True)
   args = parse_args()
 
   queue, simulator_process, simulator_bridge = create_bridge(args.dual_camera, args.high_quality)
